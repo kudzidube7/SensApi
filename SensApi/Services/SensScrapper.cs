@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PuppeteerSharp;
 using SensApi.Models;
+using System.Xml.Linq;
 
 namespace SensApi.Services
 {
     public class SensScrapper : ISensScrapper
     {
         private readonly IDataCleaner _dataCleaner;
+        private readonly IPDFAccesorService _pdfAccessorService;
+        private readonly ISummariserService _summariserService;
         public string GetScrapper()
         {
             Console.WriteLine("Scrapping ......");
@@ -14,9 +17,11 @@ namespace SensApi.Services
             return data;
         }
 
-        public SensScrapper(IDataCleaner dataCleaner)
+        public SensScrapper(IDataCleaner dataCleaner, IPDFAccesorService pdfAccessorService, ISummariserService summariserService)
         {
             _dataCleaner = dataCleaner;
+            _pdfAccessorService = pdfAccessorService;
+            _summariserService = summariserService;
         }
 
         public async Task<List<SensAnnouncement>> ScrapeData(string url)
@@ -48,7 +53,14 @@ namespace SensApi.Services
                     SensAnnouncement sensAnnouncement = new SensAnnouncement();
                    
                     var text = await li.GetPropertyAsync("textContent");
-                    if(text.ToString != null)
+                    var link = await li.QuerySelectorAsync("a.sens__link");
+                    string href = await link.EvaluateFunctionAsync<string>("el => el.getAttribute('href')");
+                    if (!string.IsNullOrEmpty(href))
+                    {
+                        sensAnnouncement.AnnouncementPdfUrl = href;
+                    }
+
+                    if (text.ToString != null)
                     {
                         //Get reference number then remove it from string
                         var reference = _dataCleaner.GetReference(text.ToString());
@@ -56,21 +68,29 @@ namespace SensApi.Services
 
                         var cleanText = _dataCleaner.RemoveReferenceFromData(reference, text.ToString());
 
-                        //Get Company name then remove it from string
+                        //Get issuer name then remove it from string
                         var issuerName = _dataCleaner.GetIssuer(cleanText);
                         sensAnnouncement.Issuer = issuerName;
 
                         var noIssuerText = _dataCleaner.RemoveIssuerNameFromData(issuerName, cleanText);
 
-                       // cleanText = _dataCleaner.RemoveIssuerNameFromData(issueName, cleanText);
+                        var description = _dataCleaner.GetDescription(noIssuerText);
+                        sensAnnouncement.Description= description;
+
                     }
                    
                     liContents.Add(sensAnnouncement);
-                    //CreateSensAnnouncement(text.ToString());
+                    
                 }
 
+                if(liContents.Count > 0)
+                {
+                    var pdfString = await _pdfAccessorService.GetPdfStringContents(liContents.FirstOrDefault().AnnouncementPdfUrl.ToString());
+                    Console.WriteLine(pdfString);
 
-                //var data = await page.EvaluateExpressionAsync("");
+                    await _summariserService.Summarise(pdfString);
+
+                }
 
                 var data = liContents;
 
@@ -88,21 +108,21 @@ namespace SensApi.Services
         }
 
         #region Private Methods
-        private SensAnnouncement CreateSensAnnouncement(string sensString)
-        {
-            string[] parts = sensString.Split(new char[] { '-', '|' });
+        //private SensAnnouncement CreateSensAnnouncement(string sensString)
+        //{
+        //    string[] parts = sensString.Split(new char[] { '-', '|' });
 
-            SensAnnouncement sensAnnouncement = new SensAnnouncement()
-            {
-                Type = parts[0],
-                Description = parts[1].Trim(),
-                ReferenceNumber = parts[2].Trim(),
-                //Date = DateTime.Parse(parts[3].Trim()),
-                Issuer = parts[4].Trim()
-            };
+        //    //SensAnnouncement sensAnnouncement = new SensAnnouncement()
+        //    //{
+        //    //    Type = parts[0],
+        //    //    Description = parts[1].Trim(),
+        //    //    ReferenceNumber = parts[2].Trim(),
+        //    //    //Date = DateTime.Parse(parts[3].Trim()),
+        //    //    Issuer = parts[4].Trim()
+        //    //};
 
-            return sensAnnouncement;
-        } 
+        //    return sensAnnouncement;
+        //} 
         #endregion
     }
 }

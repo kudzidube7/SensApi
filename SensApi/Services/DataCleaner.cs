@@ -6,6 +6,13 @@ namespace SensApi.Services
 {
     public class DataCleaner : IDataCleaner
     {
+        public string GetDescription(string noIssuerText)
+        {
+            var description = Regex.Replace(noIssuerText, @"^.*\\s*-\*", "");
+
+            return description;
+        }
+
         public string GetIssuer(string cleanText)
         {
             int separatorIndex = cleanText.IndexOf("|");

@@ -11,6 +11,8 @@ namespace SensApi
             // Add services to the container.
             builder.Services.AddScoped<ISensScrapper, SensScrapper>();
             builder.Services.AddScoped<IDataCleaner, DataCleaner>();
+            builder.Services.AddScoped<IPDFAccesorService, PDFAccessorService>();
+            builder.Services.AddScoped<ISummariserService, SummariserService>();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

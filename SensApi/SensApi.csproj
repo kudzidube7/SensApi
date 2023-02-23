@@ -7,6 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="iTextSharp" Version="5.5.13.3" />
+    <PackageReference Include="Microsoft.OpenApi" Version="1.6.2" />
+    <PackageReference Include="OpenAI" Version="1.5.0" />
     <PackageReference Include="PuppeteerSharp" Version="9.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
