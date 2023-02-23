@@ -39,9 +39,6 @@ namespace SensApi.Services
 
                 await page.GoToAsync(url, WaitUntilNavigation.Networkidle0);
 
-                //await page.WaitForNavigationAsync();
-
-                //var ulElement = await page.WaitForSelectorAsync("li");
                 var ulElement = await page.QuerySelectorAsync("ul#announcements");
 
                 var liElements = await ulElement.QuerySelectorAllAsync("li");
